@@ -231,7 +231,7 @@ io.on('connection',(socket)=>{
                 const winnerResponse2={
                     text: `${reqBody['to']['name']} won!`
                 }
-                socket.broadcast.to(roomId).emit('win',winnerResponse2);
+                io.in(roomId).emit('win',winnerResponse2);
             }
         }
     })
