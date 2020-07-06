@@ -232,6 +232,7 @@ io.on('connection',(socket)=>{
                     text: `${reqBody['to']['name']} won!`
                 }
                 io.in(roomId).emit('win',winnerResponse2);
+                deleteRoom(roomId);
             }
         }
     })
@@ -259,6 +260,7 @@ io.on('connection',(socket)=>{
                 io.to(sid).emit('win',winnerResponse2);
             }
         }
+        deleteRoom(roomId);
     })
 })
 
@@ -279,6 +281,25 @@ function joinRoom(socket,roomId, userName, uid){
             distributeCards(roomId)
         }
     })
+}
+
+function deleteRoom(roomId){
+    const room=JSON.parse(JSON.stringify(rooms[roomId]));
+    rooms[roomId]['isOver']= true;
+    const players= room['players'];
+    delete currentTurnDetails[roomId];
+    delete currentStackDetails[roomId];
+    delete currentDeclaration[roomId];
+    delete previouslyRevealedCards[roomId];
+    for(let i=0;i<4;i++){
+        const uid= players[i]['uid'];
+        const socketId= players[i]['socketId'];
+        io.sockets.sockets[socketId].leave(roomId);
+        io.sockets.sockets[socketId]['roomId']= null;
+        delete authRooms[uid];
+        delete cardsDetails[uid];
+    }
+    delete rooms[roomId];
 }
 // 0 12  --> 13 25 --> 26 38 --> 39 51
 
@@ -317,7 +338,7 @@ function distributeCards(roomId){
     io.in(roomId).emit('currentStackDetailCount',currentStackDetails[roomId]['wholeStack'].length);
 }
 function updateOnlineStatus(id,roomId){
-    if(roomId){
+    if(roomId && rooms[roomId]){
         const playerIndex=rooms[roomId].players.findIndex((player)=>player.socketId==id);
         console.log(playerIndex);
         rooms[roomId]['players'][playerIndex]['online']=false;
