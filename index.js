@@ -1,8 +1,15 @@
 var express=require('express');
+var corsOptions = {
+    origin: 'http://localhost:8100',
+    optionsSuccessStatus: 200
+}
+var cors = require('cors')
 var app=express();
+app.use(cors(corsOptions));
 var server=require('http').createServer(app);
 var socketio=require('socket.io');
 var io=socketio().listen(server);
+
 
 const cards=require('./assets/cards.json');
 
