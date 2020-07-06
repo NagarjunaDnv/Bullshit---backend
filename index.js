@@ -343,6 +343,7 @@ const shuffle = (cards) => {
     return cards;
 };
 
-server.listen(8000,()=>{
-    console.log("Server Listening  on port: "+ 8000);
+const port= process.env.PORT || 8000
+server.listen(port,()=>{
+    console.log("Server Listening  on port: "+ port);
 })
