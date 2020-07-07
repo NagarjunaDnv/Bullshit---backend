@@ -37,7 +37,7 @@ io.on('connection',(socket)=>{
         if(rooms[roomId]){
             const roomLength=rooms[roomId]['players'].length;
             if(!rooms[roomId]['isOver'] && roomLength<4){
-                joinRoom(socket, roomId, userName, uid);
+                joinRoom(socket, roomId, userName, uid, rooms[roomId]['bulletLimit']);
                 callback({
                     success: true,
                     message: 'You have successfully joined the group',
@@ -66,6 +66,8 @@ io.on('connection',(socket)=>{
         const userName= req['name'];
         const roomId= req['roomId'];
         const uid= req['uid'];
+        const bulletLimit= req['bulletLimit'];
+        console.log(bulletLimit);
         if(authRooms[uid]){
             return callback({
                 success: false,
@@ -81,11 +83,12 @@ io.on('connection',(socket)=>{
         const room={
             id: roomId,
             by: userName,
+            bulletLimit: bulletLimit,
             players: [],
             isOver: false
         }
         rooms[roomId]=room;
-        joinRoom(socket, roomId, userName, uid);
+        joinRoom(socket, roomId, userName, uid, bulletLimit);
         return callback({
             success: true,
             message: 'Room is successfully created',
@@ -207,6 +210,7 @@ io.on('connection',(socket)=>{
             cardsDetails[fromUID]=cardsDetails[fromUID].concat(stack);
             io.to(fromSocketId).emit('initialCards',cardsDetails[fromUID]);
             rooms[roomId]['players'][fromIndex]['count']=cardsDetails[fromUID].length;
+
             socket.broadcast.to(roomId).emit('players',rooms[roomId]);
             currentStackDetails[roomId]['wholeStack']=[];
             io.in(roomId).emit('currentStackDetailCount',null);
@@ -223,6 +227,10 @@ io.on('connection',(socket)=>{
             }
             callback(body);
             socket.broadcast.to(roomId).emit('liarToasts',body);
+            if(rooms[roomId]['bulletLimit']!=-1){
+                rooms[roomId]['players'][fromIndex]['bulletCount']-=1;
+                io.in(roomId).emit('players',rooms[roomId]);
+            }
             if(cardsDetails[toUID].length==0){
                 const winnerResponse1={
                     text: 'You won!'
@@ -264,13 +272,14 @@ io.on('connection',(socket)=>{
     })
 })
 
-function joinRoom(socket,roomId, userName, uid){
+function joinRoom(socket,roomId, userName, uid, bulletLimit){
     const player={
         name: userName,
         socketId: socket.id,
         online: true,
         uid: uid,
-        count: 13
+        count: 13,
+        bulletCount: bulletLimit
     }
     rooms[roomId].players.push(player);
     socket.join(roomId,()=>{
