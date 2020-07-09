@@ -234,18 +234,18 @@ io.on('connection',(socket)=>{
                 if(rooms[roomId]['bulletLimit']!=-1){
                     io.in(roomId).emit('players',rooms[roomId]);
                 }
+                if(cardsDetails[toUID].length==0){
+                    const winnerResponse1={
+                        text: 'You won!'
+                    }
+                    io.to(toSocketId).emit('win',winnerResponse1);
+                    const winnerResponse2={
+                        text: `${reqBody['to']['name']} won!`
+                    }
+                    io.in(roomId).emit('win',winnerResponse2);
+                    deleteRoom(roomId);
+                }
             },300)
-            if(cardsDetails[toUID].length==0){
-                const winnerResponse1={
-                    text: 'You won!'
-                }
-                io.to(toSocketId).emit('win',winnerResponse1);
-                const winnerResponse2={
-                    text: `${reqBody['to']['name']} won!`
-                }
-                io.in(roomId).emit('win',winnerResponse2);
-                deleteRoom(roomId);
-            }
         }
     })
     socket.on('userCardDetails',(reqBody)=>{
