@@ -184,9 +184,7 @@ io.on('connection',(socket)=>{
             const stack= currentStackDetails[roomId]['wholeStack'];
             const toSocketId= rooms[roomId]['players'][toIndex]['socketId'];
             cardsDetails[toUID]=cardsDetails[toUID].concat(stack);
-            io.to(toSocketId).emit('initialCards',cardsDetails[toUID]);
             rooms[roomId]['players'][toIndex]['count']=cardsDetails[toUID].length;
-            io.in(roomId).emit('players',rooms[roomId]);
             currentStackDetails[roomId]['wholeStack']=[];
             io.in(roomId).emit('currentStackDetailCount',null);
             currentDeclaration[roomId]=null;
@@ -194,24 +192,25 @@ io.on('connection',(socket)=>{
                 uid: fromUID,
                 value: supposedValue
             }
-            io.in(roomId).emit('turn',currentTurnDetails[roomId]);
             const body={
                 isLiar: isLiar,
                 text: `Yayyy!!! ${reqBody['to']['name']} is a liar`,
                 id: toUID
             }
-            callback(body);
-            socket.broadcast.to(roomId).emit('liarToasts',body);
+            setTimeout(()=>{
+                io.to(toSocketId).emit('initialCards',cardsDetails[toUID]);
+                io.in(roomId).emit('players',rooms[roomId]);
+                io.in(roomId).emit('turn',currentTurnDetails[roomId]);
+                callback(body);
+                socket.broadcast.to(roomId).emit('liarToasts',body);
+            },300)
         }
         else{
             const stack= currentStackDetails[roomId]['wholeStack'];
             const fromSocketId= rooms[roomId]['players'][fromIndex]['socketId'];
             const toSocketId= rooms[roomId]['players'][toIndex]['socketId'];
             cardsDetails[fromUID]=cardsDetails[fromUID].concat(stack);
-            io.to(fromSocketId).emit('initialCards',cardsDetails[fromUID]);
             rooms[roomId]['players'][fromIndex]['count']=cardsDetails[fromUID].length;
-
-            socket.broadcast.to(roomId).emit('players',rooms[roomId]);
             currentStackDetails[roomId]['wholeStack']=[];
             io.in(roomId).emit('currentStackDetailCount',null);
             currentDeclaration[roomId]=null;
@@ -219,18 +218,23 @@ io.on('connection',(socket)=>{
                 uid: reqBody['nextUID'],
                 value: currentValue
             }
-            io.in(roomId).emit('turn',currentTurnDetails[roomId]);
             const body= {
                 isLiar: isLiar,
                 text: `Oops!!! ${reqBody['to']['name']} is not a liar`,
                 id: toUID
             }
-            callback(body);
-            socket.broadcast.to(roomId).emit('liarToasts',body);
-            if(rooms[roomId]['bulletLimit']!=-1){
-                rooms[roomId]['players'][fromIndex]['bulletCount']-=1;
-                io.in(roomId).emit('players',rooms[roomId]);
-            }
+            rooms[roomId]['players'][fromIndex]['bulletCount']-=1;
+
+            setTimeout(()=>{
+                io.to(fromSocketId).emit('initialCards',cardsDetails[fromUID]);
+                socket.broadcast.to(roomId).emit('players',rooms[roomId]);
+                io.in(roomId).emit('turn',currentTurnDetails[roomId]);
+                callback(body);
+                socket.broadcast.to(roomId).emit('liarToasts',body);
+                if(rooms[roomId]['bulletLimit']!=-1){
+                    io.in(roomId).emit('players',rooms[roomId]);
+                }
+            },300)
             if(cardsDetails[toUID].length==0){
                 const winnerResponse1={
                     text: 'You won!'
